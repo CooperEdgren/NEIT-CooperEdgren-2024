@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Week 2 Gun Program</title>
+    <!--PUT YOUR NAME IN THE META TAG FOR AUTHOR-->
+    <meta name="author" content="YOUR NAME GOES HERE">
+    <!--xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx-->
+    <meta name="description" content="Small programming assignment using events, variables, functions and conditional logic">
+</head>
+<body>
+    <!--Main content of the site-->
+    <div>
+        <!--Control and output for the "shoot" functionality-->
+        <div>
+            <button id="trigger-button">Trigger</button>
+            <span id="trigger-display"></span>
+        </div>
+        <!--Control and output for the "reload" functionality-->
+        <div>
+            <button id="reload-button">Reload</button>
+            <span id="reload-display"></span>
+        </div>
+    </div>
+    <script>
+        /*-----------------------------------
+        Project Description: 
+        In this assignment you will write the code to make the following happen:
+        1. Make the reload button clickable
+        2. When it is clicked your inventory will lose ammo
+        3. When it is clicked your gun will gain ammo
+        4. The inventory should never drop below 0
+        5. CHALLENGE: Can you make the correct number of ammo move from the inventory to the gun? For example if the ammo is at 4 and the max is 6 can you make only 2 subtract from inventory and add to ammo?
+        6. Display the resulting numbers in the span tags.
+        ------------------------------------*/
+
+        //stores the <button> and <span> elements in variables by selecting the the elements by their id attribute. The # is used when referencing an element's id
+        var triggerButton = document.querySelector(`#trigger-button`)
+        var triggerDisplay = document.querySelector(`#trigger-display`)
+        var reloadButton = document.querySelector(`#reload-button`)
+        var reloadDisplay = document.querySelector(`#reload-display`)
+
+        //Variables used to set up the gun and inventory values
+        //Maximum amount of ammo the weapon can hold
+        var max = 6
+        //Amount of ammo currently loaded into the weapon
+        var currentAmmo = max
+        //Amount of ammo in the character's inventory
+        var inventory = 10
+
+        //Changes the words between <span> and </span> for each span element
+        triggerDisplay.innerHTML = `AMMO: ${currentAmmo}`
+        reloadDisplay.innerHTML = `INVENTORY: ${inventory}`
+
+        /*
+        Adds functionality to the button so that when it is clicked it will execute the shoot function
+        */
+        triggerButton.addEventListener(`click`, shoot)
+
+        /*
+        When the shoot function is executed by a user/player clicking the trigger button:
+         1. currentAmmo is subtracted by one
+         2. if currentAmmo is less than zero, it is set back to zero
+         3. The triggerDisplay text is updated to show the latest value for currentAmmo
+         NOTE: the "event" placeholder variable in the parenthesis needs to be there for a function to work when it is executed by a  click or any other type of event listener.
+        */
+        function shoot(event)
+        {
+            currentAmmo--
+            if(currentAmmo<0)
+            {
+                currentAmmo = 0;
+            }
+            triggerDisplay.innerHTML = `AMMO: ${currentAmmo}`
+        }
+
+        reloadButton.addEventListener('click', reload)
+
+        var reloadAmount = (max - currentAmmo)
+
+        function reload(event)
+        {
+            currentAmmo + reloadAmount
+        
+        }
+        /*------------------INSTRUCTIONS------------------
+        Using the code above as a guide, try to make the reload button work below this comment.
+        1. Add an event listener to it that calls a function when clicked
+        2. Within the function do the following
+            a. Subtract ammo from the inventory
+            b. Add ammo to the currentAmmo
+            d. Stop inventory from going into the negative numbers
+            c. Display the result on in the reloadDisplay by changing it's innerHTML
+            d. EXTRA CHALLENGE: Figure out how much ammo to load. This will require some math based on how much ammo has been expended and the maximum amount ammo the weapon can hold
+        --------------------------------------------------*/
+    </script>
+</body>
+</html>
