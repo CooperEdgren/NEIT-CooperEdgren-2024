@@ -76,14 +76,24 @@
             triggerDisplay.innerHTML = `AMMO: ${currentAmmo}`
         }
 
-        reloadButton.addEventListener('click', reload)
+        reloadButton.addEventListener(`click`, reload)
 
         var reloadAmount = (max - currentAmmo)
 
-        function reload(event)
+        function reload(reloadEvent)
         {
-            currentAmmo + reloadAmount
-        
+            var reloadAmount = (max - currentAmmo);
+            if (inventory >= reloadAmount) 
+            {
+                currentAmmo += reloadAmount;
+                inventory -= reloadAmount;
+            } else 
+            {
+                currentAmmo += inventory;
+                inventory = 0
+            }
+            reloadDisplay.innerHTML = `INVENTORY: ${inventory}`
+            triggerDisplay.innerHTML = `AMMO: ${currentAmmo}`
         }
         /*------------------INSTRUCTIONS------------------
         Using the code above as a guide, try to make the reload button work below this comment.
