@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang ="en">
+
+<body>
+    <script>
+var fps = 1000/60
+        //The timer calls the game function 60 times per second
+var timer = setInterval(game, fps)
+
+// The logic for the game goes here
+function game()
+{
+   /*--------------------------------------------
+     Typical order of operations is:
+     1. Erase the screen
+     2. Perform math that will move an object
+     3. Handle collision detection
+     4. Update the images on the screen
+--------------------------------------------------*/
+}
+
+    </script>
+
+<!-- submit button-->
+
+<p id="add">Click to add</p>
+<script>
+  var p = document.querySelector(`#add`)
+  p.addEventListener(`click`, function(e)
+  {
+    add(5,5)
+  })
+  function add(_a, _b)
+  {
+    alert(_a + _b)
+  }
+</script>
+</body>
+
+</html>
