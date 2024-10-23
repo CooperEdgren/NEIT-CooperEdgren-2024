@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+    <body>
+        <script>
+            var p = Number(prompt(`What Number do you pick: \n0: Rock\n1:Paper\n2:Scissors?`))
+var c = Math.floor(Math.random()*2.9)
+var choices = [`Rock`, `Paper`, `Scissors`]
+
+var outcomes = [
+  [`ties`, `loses`, `wins`]
+  [`wins`, `ties`, `loses`]
+  [`loses`,`wins`,`ties`]
+]
+
+alert (`Player Picked: ${choices[p]} and Computer Picked: ${choices[c]}`)
+alert (`Player ${outcomes[p][c]}`)
+        </script>
+    </body>
+</html>
