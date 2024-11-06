@@ -7,9 +7,9 @@ canvas.height = 500;
 
 // Game Variables
 let isJumping = false;
-let gravity = 0.65; // Gravity strength
+let gravity = 0.7; // Gravity strength
 let jumpStrength = 16; // Initial jump speed
-let gameSpeed = 2;
+let gameSpeed = 6.6;
 let score = 0;
 let gameOver = false;
 
@@ -23,6 +23,16 @@ const player = {
   velocityY: 0, // Vertical velocity for smooth jumping and falling
   groundLevel: canvas.height - 40 // Set ground level to bottom of the canvas minus height of the player
 };
+
+
+// Ground Floor
+function drawFloor() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = 'red';
+  ctx.fillRect(0, rectTop, canvas.width, rectHeight);
+
+}
+
 
 // Obstacles
 const obstacles = [];
@@ -88,7 +98,8 @@ function gameLoop() {
       player.x < obstacle.x + obstacle.width &&
       player.x + player.width > obstacle.x &&
       player.y < obstacle.y + obstacle.height &&
-      player.y + player.height > obstacle.y
+      player.y + player.height > obstacle.y &&
+      
     ) {
       gameOver = true;
       displayGameOver();
@@ -145,7 +156,7 @@ function resetGame() {
   player.velocityY = 0;
   obstacles.length = 0;
   score = 0;
-  gameSpeed = 2;
+  gameSpeed = 6.6;
   gameOver = false;
   obstacleTimer = 0;
   nextObstacleIn = Math.floor(Math.random() * 100) + 50; // Reset random interval for next obstacle
