@@ -13,11 +13,17 @@ let missedNotes = 0;
 let notes = []; // Array to store notes
 const lanes = [0.2, 0.4, 0.6, 0.8]; // Lane positions as percentages
 const laneKeys = ['a', 's', 'd', 'f']; // Keys for lanes
+let audioContext;
+let audioBuffer;
+let audioSource;
 
 // Event listeners for game controls
 document.getElementById('start-button').addEventListener('click', startGame);
 document.getElementById('pause-button').addEventListener('click', togglePause);
 document.getElementById('audio-upload').addEventListener('change', handleAudioUpload);
+
+// Add restart button functionality
+document.getElementById('restart-button').addEventListener('click', restartGame);
 
 document.addEventListener('keydown', handleKeyDown);
 canvas.addEventListener('touchstart', handleTouchStart);
@@ -25,6 +31,9 @@ canvas.addEventListener('touchstart', handleTouchStart);
 // Function to start the game
 function startGame() {
     if (!isGameRunning) {
+        if (audioBuffer) {
+            playAudio();
+        }
         isGameRunning = true;
         requestAnimationFrame(gameLoop);
     }
@@ -33,21 +42,43 @@ function startGame() {
 // Function to toggle pause
 function togglePause() {
     isGameRunning = !isGameRunning;
-    if (isGameRunning) requestAnimationFrame(gameLoop);
+    if (isGameRunning) {
+        if (audioSource) {
+            audioSource.resume();
+        }
+        requestAnimationFrame(gameLoop);
+    } else {
+        if (audioSource) {
+            audioSource.suspend();
+        }
+    }
 }
 
 // Function to handle audio upload and generate notes
 function handleAudioUpload(event) {
     const file = event.target.files[0];
     if (file) {
-        const audioContext = new AudioContext();
+        if (!audioContext) {
+            audioContext = new AudioContext();
+        }
         const reader = new FileReader();
         reader.onload = function(e) {
             audioContext.decodeAudioData(e.target.result, function(buffer) {
+                audioBuffer = buffer;
                 generateNotes(buffer);
             });
         };
         reader.readAsArrayBuffer(file);
+    }
+}
+
+// Function to play audio
+function playAudio() {
+    if (audioBuffer && audioContext) {
+        audioSource = audioContext.createBufferSource();
+        audioSource.buffer = audioBuffer;
+        audioSource.connect(audioContext.destination);
+        audioSource.start(0);
     }
 }
 
@@ -149,4 +180,16 @@ function renderGame() {
 function failState() {
     isGameRunning = false;
     alert('Game Over!');
+}
+
+// Function to restart the game
+function restartGame() {
+    isGameRunning = false;
+    score = 0;
+    streak = 0;
+    multiplier = 1;
+    missedNotes = 0;
+    notes = [];
+    updateScoreDisplay();
+    startGame();
 }
