@@ -1,0 +1,26 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rhythm Game</title>
+    <link rel="stylesheet" href="styles/style.css">
+</head>
+<body>
+    <div id="game-container">
+        <div id="game-header">
+            <button id="start-button">Start Game</button>
+            <button id="pause-button">Pause Game</button>
+            <div id="score-container">
+                <p>Score: <span id="score">0</span></p>
+                <p>Streak: <span id="streak">0</span></p>
+                <p>Multiplier: <span id="multiplier">1x</span></p>
+            </div>
+        </div>
+        <canvas id="game-canvas"></canvas>
+        <input type="file" id="audio-upload" accept=".mp3, .wav">
+    </div>
+    <script src="scripts/game.js"></script>
+</body>
+</html>
