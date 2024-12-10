@@ -1,3 +1,6 @@
+let time = 0; // declare and initiallize time variable
+let color = '#ffffff'; // declares color
+
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 canvas.width = 800;
@@ -90,6 +93,26 @@ function startGame() {
     return;
   }
 
+  function gameLoop(timestamp = 0) {
+    if (!gameActive) return;
+  
+    const deltaTime = timestamp - lastTimestamp;
+    lastTimestamp = timestamp;
+  
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    drawLanes();
+    updateNotes(deltaTime);
+    drawNotes();
+    drawScore();
+    checkNoteHit(lane);
+    adjustColorBrightness(color, amount);
+    drawFeedback();
+    togglePause();
+    restartGame();
+  
+    requestAnimationFrame(gameLoop);
+  }  
+
   // Reset game state
   notes = [];
   score = 0;
@@ -110,13 +133,14 @@ function startGame() {
   gameLoop();
 }
 
+var lane = lanes[Math.floor(Math.random() * lanes.length)];
+var note = { time, lane, y: -50, hit: false }; //Starts notes slightly off screen
+
 function generateNotes() {
     const duration = audioBuffer.duration;
     const peaks = detectPeaks(audioBuffer.getChannelData(0));
   
     peaks.forEach(time => {
-      const lane = lanes[Math.floor(Math.random() * lanes.length)];
-      const note = { time, lane, y: -50, hit: false }; // Start y slightly above the screen
       notes.push(note);
       console.log('Generated Note:', note); // Debugging: Log note details
     });
@@ -137,86 +161,72 @@ function detectPeaks(data) {
 
 function handleKeydown(event) {
   const key = event.key.toUpperCase();
+  if (!activeKeys[key]) {
+    console.log(`Key pressed: ${key}`);
+  }
   activeKeys[key] = true;
-
-  lanes.forEach(lane => {
-    if (key === lane.key) {
-      checkNoteHit(lane.x);
-    }
-  });
 }
 
 function handleKeyup(event) {
   const key = event.key.toUpperCase();
+  if (activeKeys[key]) {
+    console.log(`Key released: ${key}`);
+  }
   activeKeys[key] = false;
 }
 
+
 const TIMING_WINDOW = 0.15;
+let feedbackMessage = '';
+let feedbackTimer = 0;
 
-function checkNoteHit(laneX) {
+function checkNoteHit(lane) {
     const currentTime = audioContext.currentTime;
-  
     notes.forEach(note => {
-      const timingDifference = Math.abs(note.time - currentTime);
-      const isCloseEnough = Math.abs(note.y - (canvas.height - 100)) < 15; // Adjust for hit area
-  
-      if (
-        !note.hit &&
-        timingDifference < TIMING_WINDOW &&
-        note.lane.x === laneX &&
-        isCloseEnough
-      ) {
-        note.hit = true;
-        streak += 1;
-        comboMultiplier = Math.min(1 + Math.floor(streak / 5), 5);
-        score += 100 * comboMultiplier;
-        console.log(`Hit! Score: ${score}, Streak: ${streak}, Multiplier: ${comboMultiplier}`);
-      }
+        if (!note.hit && Math.abs(note.time - currentTime) < TIMING_WINDOW && note.lane.x === lane) {
+            note.hit = true;
+            feedbackMessage = 'Hit!';
+            feedbackTimer = 30; // Display feedback for 30 frames
+        }
     });
-  }
-  
-
-
-function gameLoop(timestamp = 0) {
-  if (!gameActive) return;
-
-  const deltaTime = timestamp - lastTimestamp;
-  lastTimestamp = timestamp;
-
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  drawLanes();
-  updateNotes(deltaTime);
-  drawNotes();
-  drawScore();
-  checkNoteHit(laneX);
-
-  requestAnimationFrame(gameLoop);
 }
 
-function updateNotes(deltaTime) {
-    const speed = 0.5; // Adjust speed for visible movement
-    const currentTime = audioContext.currentTime;
-  
-    notes = notes.filter(note => {
-      const missed = !note.hit && note.time < currentTime - TIMING_WINDOW;
-      if (missed) {
-        streak = 0; // Reset streak on miss
-        comboMultiplier = 1;
-        console.log('Missed Note:', note);
-      }
-      return !missed; // Remove missed notes
-    });
-  
-    notes.forEach(note => {
-      // Move notes down based on time
-      if (!note.hit) {
-        note.y += deltaTime * speed;
-      }
-    });
+function drawFeedback() {
+    if (feedbackTimer > 0) {
+        ctx.fillStyle = 'white';
+        ctx.font = '24px Arial';
+        ctx.fillText(feedbackMessage, canvas.width / 2, canvas.height - 120);
+        feedbackTimer--;
+    }
+}
+
+function togglePause() {
+  gameActive = !gameActive;
+  if (gameActive) {
+      requestAnimationFrame(gameLoop);
   }
-  
-  
-  
+}
+
+
+function updateNotes(deltaTime) {
+  const speed = 0.1 * deltaTime; // Adjust speed factor for smooth movement
+  notes = notes.filter(note => {
+    const missed = !note.hit && note.y > canvas.height; // Remove notes falling past screen
+    if (missed) {
+      streak = 0; 
+      comboMultiplier = 1;
+      console.log('Missed Note:', note);
+    }
+    return !missed;
+  });
+
+  notes.forEach(note => {
+    if (!note.hit) {
+      note.y += speed; // Move notes downwards
+    }
+  });
+}
+
 
 function drawLanes() {
   lanes.forEach(lane => {
@@ -299,3 +309,25 @@ function restartGame() {
     // Restart the game
     startGame();
 }
+
+
+function gameLoop(timestamp = 0) {
+  if (!gameActive) return;
+
+  const deltaTime = timestamp - lastTimestamp;
+  lastTimestamp = timestamp;
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  drawLanes();
+  updateNotes(deltaTime);
+  drawNotes();
+  drawScore();
+  checkNoteHit(lane);
+  adjustColorBrightness(color, amount);
+  drawFeedback();
+  togglePause();
+  restartGame();
+
+  requestAnimationFrame(gameLoop);
+}
+
