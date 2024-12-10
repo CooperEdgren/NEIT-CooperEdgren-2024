@@ -16,6 +16,7 @@ const laneKeys = ['a', 's', 'd', 'f']; // Keys for lanes
 let audioContext;
 let audioBuffer;
 let audioSource;
+const TIMING_WINDOW = 60; // Timing window in pixels
 
 // Event listeners for game controls
 document.getElementById('start-button').addEventListener('click', startGame);
@@ -44,12 +45,12 @@ function togglePause() {
     isGameRunning = !isGameRunning;
     if (isGameRunning) {
         if (audioSource) {
-            audioSource.resume();
+            audioContext.resume();
         }
         requestAnimationFrame(gameLoop);
     } else {
         if (audioSource) {
-            audioSource.suspend();
+            audioContext.suspend();
         }
     }
 }
@@ -75,10 +76,20 @@ function handleAudioUpload(event) {
 // Function to play audio
 function playAudio() {
     if (audioBuffer && audioContext) {
+        stopAudio(); // Stop any previous audio
         audioSource = audioContext.createBufferSource();
         audioSource.buffer = audioBuffer;
         audioSource.connect(audioContext.destination);
         audioSource.start(0);
+    }
+}
+
+// Function to stop audio
+function stopAudio() {
+    if (audioSource) {
+        audioSource.stop();
+        audioSource.disconnect();
+        audioSource = null;
     }
 }
 
@@ -115,7 +126,7 @@ function handleTouchStart(event) {
 function checkNoteHit(laneIndex) {
     for (let i = 0; i < notes.length; i++) {
         const note = notes[i];
-        if (note.lane === laneIndex && Math.abs(note.y - canvas.height * 0.9) < 30) {
+        if (note.lane === laneIndex && Math.abs(note.y - canvas.height * 0.9) < TIMING_WINDOW) {
             // Remove the note and update score
             notes.splice(i, 1);
             score += 10 * multiplier;
@@ -179,6 +190,7 @@ function renderGame() {
 // Handle fail state
 function failState() {
     isGameRunning = false;
+    stopAudio(); // Stop audio on fail
     alert('Game Over!');
 }
 
@@ -190,6 +202,10 @@ function restartGame() {
     multiplier = 1;
     missedNotes = 0;
     notes = [];
+    stopAudio(); // Stop current audio
+    if (audioBuffer) {
+        generateNotes(audioBuffer); // Regenerate notes
+    }
     updateScoreDisplay();
     startGame();
 }
