@@ -1,149 +1,169 @@
-const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
+// Game Variables
+let isJumping = false;
+let gravity = 0.7; // Gravity strength
+let jumpStrength = 16; // Initial jump speed
+let gameSpeed = 6.6;
+let score = 0;
+let gameOver = false;
 
-// Set canvas size
-canvas.width = 1000;
-canvas.height = 500;
+// Player Object
+const player = {
+  x: 50,
+  y: canvas.height - 40, // Start at the bottom (adjusted to 40px above the ground level)
+  width: 40,
+  height: 40,
+  color: '#00FF00',
+  velocityY: 0, // Vertical velocity for smooth jumping and falling
+  groundLevel: canvas.height - 40 // Set ground level to bottom of the canvas minus height of the player
+};
 
-    // Define Game Variables
-    let isJumping = false;
-    let gravity = 0.7;
-    let jumpStrength = 16;
-    let gameSpeed = 6.6;
-    let score = 0;
-    let gameOver = false;
 
-    const player = {
-      x: 100,
-      y: canvas.height - 100,
-      width: 50,
-      height: 50,
-      velocityY: 0,
-    };
 
-    const groundLevel = canvas.height - player.height;
 
-    let obstacles = [];
-    let obstacleTimer = 0;
-    let nextObstacleIn = getRandomInterval(60, 120);
 
-    // Utility function to generate random interval
-    function getRandomInterval(min, max) {
-      return Math.floor(Math.random() * (max - min + 1)) + min;
+// Obstacles
+const obstacles = [];
+let obstacleTimer = 0;
+let nextObstacleIn = Math.floor(Math.random() * 100) + 50; // Random interval to spawn next obstacle
+
+// Game Loop
+function gameLoop() {
+  if (gameOver) return;
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Player Gravity and Jumping Logic
+  if (isJumping) {
+    // Apply gravity and vertical velocity to jump
+    player.velocityY -= gravity; // Make the jump arc
+  } else {
+    // Player is falling down, apply gravity if the player is not on the ground
+    if (player.y > player.groundLevel) {
+      player.velocityY += gravity; // Apply gravity to fall down
+    } else {
+      player.velocityY = 0; // Stop falling when the player reaches the ground
+      player.y = player.groundLevel; // Player stays on the ground
+      isJumping = false; // Reset jumping state when player reaches the ground
     }
+  }
 
-    // Reset Game
-    function resetGame() {
-      player.y = groundLevel;
-      player.velocityY = 0;
-      isJumping = false;
-      score = 0;
-      gameOver = false;
-      obstacles = [];
-      obstacleTimer = 0;
-      nextObstacleIn = getRandomInterval(60, 120);
-      gameSpeed = 6.6;
-      gameLoop();
-    }
+  // Prevent player from falling below the ground level (bottom of the canvas)
+  if (player.y > player.groundLevel) {
+    player.y = player.groundLevel; // Lock player to ground level
+  }
 
-    // Handle Obstacles
-    function createObstacle() {
-      const height = getRandomInterval(30, 80);
-      obstacles.push({
-        x: canvas.width,
-        y: canvas.height - height,
-        width: 30,
-        height: height,
-      });
-    }
+  // Update player position based on velocity
+  player.y -= player.velocityY;
 
-    // Collision Detection
-    function checkCollision(player, obstacle) {
-      return (
-        player.x < obstacle.x + obstacle.width &&
-        player.x + player.width > obstacle.x &&
-        player.y < obstacle.y + obstacle.height &&
-        player.y + player.height > obstacle.y
-      );
-    }
+  // Draw Player
+  ctx.fillStyle = player.color;
+  ctx.fillRect(player.x, player.y, player.width, player.height);
 
-    // Start Game Loop
-    function gameLoop() {
-      if (gameOver) {
-        ctx.fillStyle = "red";
-        ctx.font = "30px Arial";
-        ctx.fillText("Game Over! Press Space to Restart", canvas.width / 4, canvas.height / 2);
-        return;
-      }
+  // Obstacles Logic
+  obstacleTimer++;
 
-      // Clear canvas
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-      // Handle Player Gravity and Jumping
-      if (player.y < groundLevel) {
-        // Apply gravity while in the air
-        player.velocityY += gravity;
-        player.y += player.velocityY;
-      } else {
-        // Player is on the ground
-        player.y = groundLevel;
-        player.velocityY = 0;
-        isJumping = false;
-      }
-
-      // Draw Player
-      ctx.fillStyle = "blue";
-      ctx.fillRect(player.x, player.y, player.width, player.height);
-
-      // Handle Obstacles
-      obstacleTimer++;
-      if (obstacleTimer >= nextObstacleIn) {
-        createObstacle();
-        obstacleTimer = 0;
-        nextObstacleIn = getRandomInterval(60, 120);
-      }
-
-      for (let i = obstacles.length - 1; i >= 0; i--) {
-        const obstacle = obstacles[i];
-        obstacle.x -= gameSpeed;
-
-        // Check for collision
-        if (checkCollision(player, obstacle)) {
-          gameOver = true;
-          break;
-        }
-
-        // Remove off-screen obstacles and increment score
-        if (obstacle.x + obstacle.width < 0) {
-          obstacles.splice(i, 1);
-          score++;
-        }
-
-        // Draw obstacles
-        ctx.fillStyle = "green";
-        ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
-      }
-
-      // Display score
-      ctx.fillStyle = "black";
-      ctx.font = "20px Arial";
-      ctx.fillText(`Score: ${score}`, 20, 30);
-
-      // Request next frame
-      requestAnimationFrame(gameLoop);
-    }
-
-    // Listen for Keydown Events
-    document.addEventListener("keydown", (event) => {
-      if (event.code === "Space") {
-        if (gameOver) {
-          resetGame();
-        } else if (!isJumping && player.y === groundLevel) {
-          isJumping = true;
-          player.velocityY = -jumpStrength;
-        }
-      }
+  // Only spawn a new obstacle after a random interval
+  if (obstacleTimer >= nextObstacleIn) {
+    obstacles.push({
+      x: canvas.width,
+      y: canvas.height - 60, // Obstacles at ground level
+      width: 30,
+      height: Math.random() * 50 + 30
     });
 
-    // Start the game
-    gameLoop();
+    // Reset the timer and generate random spacing for the next obstacle
+    nextObstacleIn = Math.floor(Math.random() * 100) + 50; // Random interval between 50 and 150 frames
+    obstacleTimer = 0; // Reset the timer
+  }
+
+  // Move Obstacles
+  obstacles.forEach((obstacle, index) => {
+    obstacle.x -= gameSpeed;
+
+    // Collision Detection
+    if (
+      player.x < obstacle.x + obstacle.width &&
+      player.x + player.width > obstacle.x &&
+      player.y < obstacle.y + obstacle.height &&
+      player.y + player.height > obstacle.y
+     ) {
+      gameOver = true;
+      displayGameOver();
+    }
+
+    // Remove off-screen obstacles
+    if (obstacle.x + obstacle.width < 0) {
+      obstacles.splice(index, 1);
+      score++;
+    }
+
+    // Draw Obstacles
+    ctx.fillStyle = '#FF0000';
+    ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+  });
+
+
+  // Ground Collision
+player.velocityY += gravity;
+player.y += player.velocityY;
+
+ if (player.y >= groundLevel) {
+  player.y = groundLevel;
+  player.velocityY = 0;
+  isJumping = false;
+ }
+
+
+ if (checkCollision(player, obstacle)) {
+  gameOver = true;
+  break;
+ }
+  // Score Display
+  ctx.font = '20px Arial';
+  ctx.fillStyle = '#FFFFFF';
+  ctx.fillText('Score: ' + score, 10, 30);
+
+  // Next frame
+  requestAnimationFrame(gameLoop);
+}
+
+// Keydown Event Listener for Jumping
+document.addEventListener('keydown', (e) => {
+  if (e.key === ' ' && !isJumping && !gameOver) {
+    isJumping = true;
+    player.velocityY = jumpStrength; // Start with initial jump speed
+  }
+});
+
+// Display Game Over screen
+function displayGameOver() {
+  ctx.fillStyle = '#FFFFFF';
+  ctx.font = '30px Arial';
+  ctx.fillText('Game Over!', canvas.width / 2 - 75, canvas.height / 2 - 30);
+  ctx.font = '20px Arial';
+  ctx.fillText('Final Score: ' + score, canvas.width / 2 - 60, canvas.height / 2 + 10);
+  ctx.fillText('Press Space to Restart', canvas.width / 2 - 90, canvas.height / 2 + 40);
+}
+
+// Restart Game
+document.addEventListener('keydown', (e) => {
+  if (e.key === ' ' && gameOver) {
+    resetGame();
+  }
+});
+
+// Reset Game after Game Over
+function resetGame() {
+  player.y = canvas.height - 40; // Reset player to ground level
+  player.velocityY = 0;
+  obstacles.length = 0;
+  score = 0;
+  gameSpeed = 6.6;
+  gameOver = false;
+  obstacleTimer = 0;
+  nextObstacleIn = Math.floor(Math.random() * 100) + 50; // Reset random interval for next obstacle
+  gameLoop();
+}
+
+// Start the game loop
+gameLoop();
