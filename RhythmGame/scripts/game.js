@@ -1,4 +1,3 @@
-
 // Select canvas and set up context
 const canvas = document.getElementById('game-canvas');
 const ctx = canvas.getContext('2d');
@@ -13,11 +12,15 @@ let multiplier = 1;
 let missedNotes = 0;
 let notes = []; // Array to store notes
 const lanes = [0.2, 0.4, 0.6, 0.8]; // Lane positions as percentages
+const laneKeys = ['a', 's', 'd', 'f']; // Keys for lanes
 
 // Event listeners for game controls
 document.getElementById('start-button').addEventListener('click', startGame);
 document.getElementById('pause-button').addEventListener('click', togglePause);
 document.getElementById('audio-upload').addEventListener('change', handleAudioUpload);
+
+document.addEventListener('keydown', handleKeyDown);
+canvas.addEventListener('touchstart', handleTouchStart);
 
 // Function to start the game
 function startGame() {
@@ -58,6 +61,50 @@ function generateNotes(buffer) {
             y: -50 - i * 150 // Staggered vertical positions
         });
     }
+}
+
+// Handle keydown events
+function handleKeyDown(event) {
+    const laneIndex = laneKeys.indexOf(event.key);
+    if (laneIndex !== -1) {
+        checkNoteHit(laneIndex);
+    }
+}
+
+// Handle touchstart events
+function handleTouchStart(event) {
+    const touchX = event.touches[0].clientX;
+    const laneIndex = Math.floor((touchX / canvas.width) * 4); // Map touch to lane
+    if (laneIndex >= 0 && laneIndex < lanes.length) {
+        checkNoteHit(laneIndex);
+    }
+}
+
+// Check if a note is hit
+function checkNoteHit(laneIndex) {
+    for (let i = 0; i < notes.length; i++) {
+        const note = notes[i];
+        if (note.lane === laneIndex && Math.abs(note.y - canvas.height * 0.9) < 30) {
+            // Remove the note and update score
+            notes.splice(i, 1);
+            score += 10 * multiplier;
+            streak++;
+            multiplier = Math.min(5, 1 + Math.floor(streak / 10)); // Max multiplier is 5x
+            updateScoreDisplay();
+            return;
+        }
+    }
+    // Miss if no note is close enough
+    streak = 0;
+    multiplier = 1;
+    updateScoreDisplay();
+}
+
+// Update score display
+function updateScoreDisplay() {
+    document.getElementById('score').textContent = score;
+    document.getElementById('streak').textContent = streak;
+    document.getElementById('multiplier').textContent = `${multiplier}x`;
 }
 
 // Game loop
