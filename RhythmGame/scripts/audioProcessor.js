@@ -1,52 +1,53 @@
 // Advanced note generation script for rhythm game
 
-async function generateSyncedNotes(audioBuffer) {
-    // Audio context setup
-    const offlineContext = new OfflineAudioContext(
-        1, // Mono channel
-        audioBuffer.length,
-        audioBuffer.sampleRate
-    );
+const audioCache = {}; // Cache for preloaded audio files
 
-    const source = offlineContext.createBufferSource();
-    source.buffer = audioBuffer;
-
-    const analyser = offlineContext.createAnalyser();
-    analyser.fftSize = 2048;
-
-    const gainNode = offlineContext.createGain();
-
-    // Connect nodes
-    source.connect(gainNode);
-    gainNode.connect(analyser);
-    analyser.connect(offlineContext.destination);
-
-    source.start(0);
-
-    // Calculate BPM
-    const bpm = await getTempoFromBuffer(audioBuffer);
-    const beatInterval = 60 / bpm; // Time between beats in seconds
-
-    // Process the audio data
-    return offlineContext.startRendering().then(() => {
-        const notes = [];
-        const duration = audioBuffer.duration;
-
-        // Generate notes based on beat intervals
-        for (let t = 0; t < duration; t += beatInterval) {
-            notes.push({
-                lane: Math.floor(Math.random() * 4), // Random lane assignment
-                time: t,
-            });
-        }
-
-        return notes;
-    });
+async function preloadAudio(url) {
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    const response = await fetch(url);
+    const arrayBuffer = await response.arrayBuffer();
+    const buffer = await audioContext.decodeAudioData(arrayBuffer);
+    audioCache[url] = buffer;
+    return buffer;
 }
 
-// Extract tempo from AudioBuffer (adapted from getTempo)
-async function getTempoFromBuffer(audioBuffer) {
+async function generateSyncedNotesFromURL(audioUrl) {
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    
+    let audioBuffer;
+    try {
+        audioBuffer = audioCache[audioUrl] || await preloadAudio(audioUrl);
+    } catch (error) {
+        console.error("Failed to load or decode audio:", error);
+        throw new Error("Audio processing failed");
+    }
+
+
+    // Analyze tempo from the audio buffer
+    const bpm = await getTempo(audioBuffer);
+    const beatInterval = 60 / bpm; // Time between beats in seconds
+
+    const notes = [];
+    const duration = audioBuffer.duration;
+
+    // Generate notes based on beat intervals
+    for (let t = 0; t < duration; t += beatInterval) {
+        const isLongNote = Math.random() < 0.3; // 30% chance to generate a long note
+        notes.push({
+            lane: Math.floor(Math.random() * 4), // Random lane assignment
+            time: t,
+            duration: isLongNote ? beatInterval * 2 : 0 // Long note duration
+        });
+    }
+
+    return notes;
+}
+
+// Extract tempo from AudioBuffer
+async function getTempo(audioBuffer) {
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
     const offlineContext = new OfflineAudioContext(1, audioBuffer.length, audioBuffer.sampleRate);
+
     const source = offlineContext.createBufferSource();
     source.buffer = audioBuffer;
 
@@ -65,8 +66,6 @@ async function getTempoFromBuffer(audioBuffer) {
     const intervals = countIntervalsBetweenPeaks(peaks);
     return groupIntervals(intervals);
 }
-
-// The extra `{` has been removed here
 
 function getPeaks(data) {
     const peaks = [];
@@ -106,33 +105,6 @@ function groupIntervals(intervals) {
     return Math.round(tempo);
 }
 
-export function processAudio(audioBuffer, sampleRate) {
-    return generateSyncedNotes(audioBuffer);
-}
-
-// Usage
-function handleAudioUploadWithSync(event) {
-    const file = event.target.files[0];
-    if (file) {
-        if (!audioContext) {
-            audioContext = new AudioContext();
-        }
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            audioContext.decodeAudioData(e.target.result, function(buffer) {
-                audioBuffer = buffer;
-
-                // Generate synced notes
-                generateSyncedNotes(buffer).then(syncedNotes => {
-                    notes = syncedNotes.map(note => ({
-                        lane: note.lane,
-                        y: -50 - note.time * 500 // Adjust y-position based on time
-                    }));
-
-                    console.log('Generated synced notes:', notes);
-                });
-            });
-        };
-        reader.readAsArrayBuffer(file);
-    }
+export function processAudioFromURL(audioUrl) {
+    return generateSyncedNotesFromURL(audioUrl);
 }

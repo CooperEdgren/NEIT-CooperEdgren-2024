@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rhythm Game</title>
-    <script type="module" src="./scripts/audioProcessor.js"></script>
+    <title>AutoTempo</title>
     <link rel="stylesheet" href="styles/style.css">
+    <script type="module" src="./scripts/audioProcessor.js"></script>
 
     <!-- Additional meta tags for compatibility -->
     <meta name="description" content="Rhythm Game with advanced note generation">
@@ -28,10 +28,11 @@
             </div>
         </div>
         <canvas id="game-canvas"></canvas>
-        <input type="file" id="audio-upload" accept=".mp3, .wav">
+        <input type="url" id="audio-upload">
     </div>
 
     <!-- Ensure correct path for game.js script -->
     <script type="module" src="./scripts/game.js"></script>    
+    <h2 style="font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;">AutoTempo</h2>
 </body>
 </html>

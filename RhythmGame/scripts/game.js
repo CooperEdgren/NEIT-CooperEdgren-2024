@@ -1,4 +1,4 @@
-import { processAudio } from ".audioProcessor.js";
+import { processAudioFromURL } from "./audioProcessor.js";
 
 // Select canvas and set up context
 const canvas = document.getElementById('game-canvas');
@@ -18,6 +18,8 @@ const laneKeys = ['a', 's', 'd', 'f']; // Keys for lanes
 let audioContext;
 let audioBuffer;
 let audioSource;
+let audioStartTime = 0;
+let pausedTime = 0;
 const TIMING_WINDOW = 160; // Timing window in pixels
 
 // Event listeners for game controls
@@ -25,7 +27,6 @@ document.getElementById('start-button').addEventListener('click', startGame);
 document.getElementById('pause-button').addEventListener('click', togglePause);
 document.getElementById('audio-upload').addEventListener('change', handleAudioUpload);
 
-// Add restart button functionality
 document.getElementById('restart-button').addEventListener('click', restartGame);
 
 document.addEventListener('keydown', handleKeyDown);
@@ -47,12 +48,12 @@ function togglePause() {
     isGameRunning = !isGameRunning;
     if (isGameRunning) {
         if (audioSource) {
-            audioContext.resume();
+            resumeAudio();
         }
         requestAnimationFrame(gameLoop);
     } else {
         if (audioSource) {
-            audioContext.suspend();
+            pauseAudio();
         }
     }
 }
@@ -61,42 +62,52 @@ function togglePause() {
 function handleAudioUpload(event) {
     const file = event.target.files[0];
     if (file) {
+        const audioUrl = URL.createObjectURL(file);
+
         if (!audioContext) {
-            audioContext = new AudioContext();
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
         }
-        
-        const reader = new FileReader();
-        reader.onload = function (e) {
-            audioContext.decodeAudioData(e.target.result, function (buffer) {
-                audioBuffer = buffer;
 
-                // Use processAudio to generate synced notes
-                processAudio(buffer, audioContext.sampleRate).then(syncedNotes => {
-                    notes = syncedNotes.map(note => ({
-                        lane: note.lane,
-                        y: -50 - note.time * 500, // Convert time to y-position
-                    }));
+        processAudioFromURL(audioUrl).then(syncedNotes => {
+            notes = syncedNotes.map(note => ({
+                lane: note.lane,
+                y: -50 - note.time * 500, // Convert time to y-position
+                duration: note.duration // Include duration for long notes
+            }));
 
-                    console.log('Generated synced notes:', notes);
-                });
-            });
-        };
-
-        reader.readAsArrayBuffer(file);
+            console.log('Generated synced notes:', notes);
+        });
     }
 }
 
-
-
-
 // Function to play audio
 function playAudio() {
+    if (audioContext.state === 'suspended') {
+        audioContext.resume();
+    }
     if (audioBuffer && audioContext) {
         stopAudio(); // Stop any previous audio
         audioSource = audioContext.createBufferSource();
         audioSource.buffer = audioBuffer;
         audioSource.connect(audioContext.destination);
-        audioSource.start(0);
+        audioStartTime = audioContext.currentTime - pausedTime;
+        audioSource.start(0, pausedTime);
+        pausedTime = 0;
+    }
+}
+
+// Function to pause audio
+function pauseAudio() {
+    if (audioSource) {
+        pausedTime = audioContext.currentTime - audioStartTime;
+        stopAudio();
+    }
+}
+
+// Function to resume audio
+function resumeAudio() {
+    if (audioBuffer && audioContext) {
+        playAudio();
     }
 }
 
@@ -106,18 +117,6 @@ function stopAudio() {
         audioSource.stop();
         audioSource.disconnect();
         audioSource = null;
-    }
-}
-
-// Function to generate notes from audio (simplified logic)
-function generateNotes(buffer) {
-    const duration = buffer.duration;
-    const noteCount = Math.floor(duration * 2); // Example: 2 notes per second
-    for (let i = 0; i < noteCount; i++) {
-        notes.push({
-            lane: Math.floor(Math.random() * 4), // Random lane
-            y: -50 - i * 150 // Staggered vertical positions
-        });
     }
 }
 
@@ -143,6 +142,11 @@ function checkNoteHit(laneIndex) {
     for (let i = 0; i < notes.length; i++) {
         const note = notes[i];
         if (note.lane === laneIndex && Math.abs(note.y - canvas.height * 0.9) < TIMING_WINDOW) {
+            // Handle long note hold
+            if (note.duration > 0) {
+                console.log('Long note hit, duration:', note.duration);
+            }
+
             // Remove the note and update score
             notes.splice(i, 1);
             score += 10 * multiplier;
@@ -200,6 +204,12 @@ function renderGame() {
         ctx.beginPath();
         ctx.arc(lanes[note.lane] * canvas.width, note.y, 20, 0, Math.PI * 2);
         ctx.fill();
+
+        // Draw long note bar if applicable
+        if (note.duration > 0) {
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+            ctx.fillRect(lanes[note.lane] * canvas.width - 10, note.y, 20, note.duration * 500);
+        }
     });
 }
 
@@ -218,9 +228,16 @@ function restartGame() {
     multiplier = 1;
     missedNotes = 0;
     notes = [];
+    pausedTime = 0;
     stopAudio(); // Stop current audio
     if (audioBuffer) {
-        generateNotes(audioBuffer); // Regenerate notes
+        processAudioFromURL(audioBuffer).then(syncedNotes => {
+            notes = syncedNotes.map(note => ({
+                lane: note.lane,
+                y: -50 - note.time * 500,
+                duration: note.duration
+            }));
+        });
     }
     updateScoreDisplay();
     startGame();
