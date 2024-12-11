@@ -3,55 +3,50 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AutoPlay</title>
+    <title>AutoPlay - Rhythm Game</title>
     <link rel="stylesheet" href="styles/style.css">
     <script type="module" src="./scripts/audioProcessor.js"></script>
-
-    <!-- Additional meta tags for compatibility -->
-    <meta name="description" content="Rhythm Game with advanced note generation">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="theme-color" content="#000000">
-
-    <!-- Tab Icon -->
-    <link rel="icon" href="assets/icon/rhythm game icon.ico" type="image/x-icon">
+    <link rel="icon" href="assets/icon/rhythm-game-icon.ico" type="image/x-icon">
 </head>
 <body>
-    <div id="score-container">
-        <p>Score: <span id="score">0</span></p>
-        <p>Streak: <span id="streak">0</span></p>
-        <p>Multiplier: <span id="multiplier">1x</span></p>
-    </div>
-    <div id="audio-info">
-        <p id="tempo-display">Tempo: N/A</p>
-        <p id="onset-count">Onsets: N/A</p>
-    </div>    
-    <div id="game-container">
-        <canvas id="visualizer-canvas"></canvas>
-        <canvas id="game-canvas"></canvas>
-    </div>
-    <div id="controls">
-        <button id="start-button">Start</button>
-        <button id="pause-button">Pause</button>
-        <button id="restart-button">Restart</button>
-        <input type="file" id="upload-audio" accept="audio/*">
-    </div>
-    <div id="settings">
-        <label for="note-generation-mode">Note Generation Mode:</label>
-        <select id="note-generation-mode">
-            <option value="pitch">Pitch Detection</option>
-            <option value="onset">Onset Detection</option>
-        </select>
-    </div>
-    <div id="current-mode">Current Mode: Pitch Detection</div>
-
-    
-    
-
-    <!-- Game JS reference -->
-    <script type="module" src="./scripts/game.js"></script>
+    <header id="header">
+        <h1>AutoPlay Rhythm Game</h1>
+    </header>
+    <main>
+        <section id="scoreboard">
+            <div id="score-container">
+                <p>Score: <span id="score">0</span></p>
+                <p>Streak: <span id="streak">0</span></p>
+                <p>Multiplier: <span id="multiplier">1x</span></p>
+            </div>
+            <div id="audio-info">
+                <p id="tempo-display">Tempo: N/A</p>
+                <p id="onset-count">Onsets: N/A</p>
+            </div>
+        </section>
+        <section id="game-area">
+            <div id="game-container">
+                <canvas id="visualizer-canvas"></canvas>
+                <canvas id="game-canvas"></canvas>
+            </div>
+        </section>
+        <section id="controls">
+            <button id="start-button" title="Start Game">▶ Start</button>
+            <button id="pause-button" title="Pause Game">⏸ Pause</button>
+            <button id="restart-button" title="Restart Game">🔄 Restart</button>
+            <input type="file" id="upload-audio" accept="audio/*" title="Upload Audio">
+        </section>
+        <section id="settings">
+            <label for="note-generation-mode">Note Generation Mode:</label>
+            <select id="note-generation-mode">
+                <option value="pitch">Pitch Detection</option>
+                <option value="onset">Onset Detection</option>
+            </select>
+        </section>
+    </main>
     <footer id="footer">
-        <p>2024 AutoPlay | Created by Cooper Edgren</p>
+        <p>© 2024 AutoPlay | Created by Cooper Edgren</p>
     </footer>
-        
+    <script type="module" src="./scripts/game.js"></script>
 </body>
 </html>

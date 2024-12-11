@@ -10,10 +10,7 @@ const visualizerCanvas = document.getElementById('visualizer-canvas');
 const visualizerCtx = visualizerCanvas.getContext('2d');
 visualizerCanvas.width = canvas.width;
 visualizerCanvas.height = canvas.height;
-console.log("Start button:", document.getElementById('start-button'));
-console.log("Pause button:", document.getElementById('pause-button'));
-console.log("Upload audio:", document.getElementById('upload-audio'));
-console.log("Restart button:", document.getElementById('restart-button'));
+
 
 // Set up variables
 let isGameRunning = false;
@@ -117,7 +114,6 @@ function renderVisualizer() {
     renderPulse(detectedTempo); // Pass the detected tempo to the pulse renderer
 }
 
-
 // Function to start the game
 /**
  * Starts the game by initializing the game loop and audio playback.
@@ -132,7 +128,6 @@ function startGame() {
         requestAnimationFrame(() => gameLoop(detectedTempo)); // Pass detectedTempo
     }
 }
-
 
 // Function to toggle pause
 /**
@@ -153,7 +148,6 @@ function togglePause() {
     }
 }
 
-
 // Handle audio upload
 /**
  * Handles the audio file upload event.
@@ -171,26 +165,25 @@ async function handleAudioUpload(event) {
     const audioUrl = URL.createObjectURL(file);
 
     try {
-         // Ensure AudioContext is resumed before processing
-         const audioContext = getAudioContext();
-         if (audioContext.state === 'suspended') {
-             await audioContext.resume();
-         }
-         const { notes: generatedNotes, tempo, onsets: generatedOnsets } = await processAudioFromURL(audioUrl);
-         setGameNotes(generatedNotes);
-         console.log("Generated notes:", generatedNotes);
-        // Set the notes and tempo in your game logic
-        audioBuffer = await preloadAudio(audioUrl, audioContext);
-        console.log("AudioBuffer loaded:", audioBuffer);
-        console.log("Notes generated:", notes);
+        console.log("Uploading audio file:", file.name);
+        console.log("Generated audio URL:", audioUrl);
+
+        const { notes, tempo, onsets } = await processAudioFromURL(audioUrl);
+
+        if (!notes || notes.length === 0) {
+            throw new Error("No notes were generated.");
+        }
+
+        setGameNotes(notes);
         setGameTempo(tempo);
-        onsets = generatedOnsets; // Ensure onsets are globally set
+
+        console.log("Notes loaded:", notes);
+        console.log("Tempo detected:", tempo);
     } catch (error) {
         console.error("Error processing audio:", error);
-        alert("Failed to process the audio file. Please try again with a different file.");
+        alert("Failed to process the audio file.");
     }
 }
-
 
 async function getAudioContext() {
     if (!audioContext) {
@@ -551,6 +544,8 @@ function renderGame() {
         //Draw Notes
         console.log("Rendering notes:", notes);
         notes.forEach(note => {
+            const currentTime = audioContext.currentTime - audioStartTime; // Sync with audio playback
+            note.y = canvas.height - (currentTime - note.time) * 50; // Adjust y-position based on time
         ctx.fillStyle = 'white';
         ctx.beginPath();
         ctx.arc(lanes[note.lane] * canvas.width, note.y, 20, 0, Math.PI * 2);
