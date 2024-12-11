@@ -7,8 +7,8 @@ canvas.width = 800;
 canvas.height = 600;
 const visualizerCanvas = document.getElementById('visualizer-canvas');
 const visualizerCtx = visualizerCanvas.getContext('2d');
-visualizerCanvas.width = 800;
-visualizerCanvas.height = 600;
+visualizerCanvas.width = canvas.width;
+visualizerCanvas.height = canvas.height;
 
 // Set up variables
 let isGameRunning = false;
@@ -28,6 +28,8 @@ let pausedTime = 0;
 let activeLongNote = null;
 const TIMING_WINDOW = 160;
 let analyser; // Global variable for the analyser node
+const activeLanes = [false, false, false, false];
+
 
 
 // Event listeners for game controls
@@ -45,25 +47,25 @@ canvas.addEventListener('touchend', handleTouchEnd);
 function renderVisualizer() {
     if (!analyser || !isGameRunning) return;
 
-    // Get frequency data
+    requestAnimationFrame(renderVisualizer);
+
     const bufferLength = analyser.frequencyBinCount;
     const dataArray = new Uint8Array(bufferLength);
     analyser.getByteFrequencyData(dataArray);
 
-    // Draw visualizer on the visualizer canvas
     visualizerCtx.clearRect(0, 0, visualizerCanvas.width, visualizerCanvas.height);
-    const barWidth = visualizerCanvas.width / bufferLength;
-    let barHeight;
+
+    const barWidth = (visualizerCanvas.width / bufferLength) * 2.5;
     let x = 0;
 
     for (let i = 0; i < bufferLength; i++) {
-        barHeight = dataArray[i];
-        visualizerCtx.fillStyle = `rgb(${barHeight + 50}, 50, 150)`;
-        visualizerCtx.fillRect(x, visualizerCanvas.height - barHeight, barWidth, barHeight);
-        x += barWidth;
-    }
+        const barHeight = dataArray[i] / 2;
 
-    requestAnimationFrame(renderVisualizer);
+        visualizerCtx.fillStyle = `rgb(${barHeight + 100}, 50, 150)`;
+        visualizerCtx.fillRect(x, visualizerCanvas.height - barHeight, barWidth, barHeight);
+
+        x += barWidth + 1;
+    }
 }
 
 // Function to start the game
@@ -73,8 +75,7 @@ function startGame() {
             playAudio();
         }
         isGameRunning = true;
-        renderVisualizer(); // Start visualizer
-        requestAnimationFrame(gameLoop); // Start game loop
+        requestAnimationFrame(gameLoop);
     }
 }
 
@@ -136,17 +137,18 @@ function playAudio() {
         audioSource = audioContext.createBufferSource();
         audioSource.buffer = audioBuffer;
 
-        // Set up analyser for the visualizer
+        // Set up analyser node
         analyser = audioContext.createAnalyser();
         analyser.fftSize = 256;
+
+        // Connect nodes
         audioSource.connect(analyser);
         analyser.connect(audioContext.destination);
 
         audioSource.start(0);
+        renderVisualizer(); // Start visualizer rendering
     }
 }
-
-
 
 // Function to pause audio
 function pauseAudio() {
@@ -176,17 +178,24 @@ function stopAudio() {
 function handleKeyDown(event) {
     const laneIndex = laneKeys.indexOf(event.key);
     if (laneIndex !== -1) {
+        activeLanes[laneIndex] = true; // Set lane as active
         checkNoteHit(laneIndex);
     }
 }
 
+
 // Handle keyup events
 function handleKeyUp(event) {
-    if (activeLongNote) {
+    const laneIndex = laneKeys.indexOf(event.key);
+    if (laneIndex !== -1) {
+        activeLanes[laneIndex] = false; // Set lane as inactive
+    }
+    if (activeLongNote && activeLongNote.lane === laneIndex) {
         activeLongNote.held = false;
         activeLongNote = null;
     }
 }
+
 
 // Handle touchstart events
 function handleTouchStart(event) {
@@ -278,10 +287,30 @@ function updateGame() {
 // Render game state
 function renderGame() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Draw lanes with highlight if active
     lanes.forEach((lane, index) => {
-        ctx.fillStyle = 'gray';
+        if (activeLanes[index]) {
+            // Create gradient
+            const gradient = ctx.createLinearGradient(
+                lane * canvas.width - 20, 0, lane * canvas.width + 20, canvas.height
+            );
+            gradient.addColorStop(0, 'rgba(255, 255, 0, 0.5)');
+            gradient.addColorStop(1, 'rgba(255, 0, 0, 0)');
+            ctx.fillStyle = gradient;
+        } else {
+            ctx.fillStyle = 'gray';
+        }
         ctx.fillRect(lane * canvas.width - 20, 0, 40, canvas.height);
     });
+        // Draw timing window line
+        ctx.strokeStyle = 'white';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(0, canvas.height * 0.9 - TIMING_WINDOW);
+        ctx.lineTo(canvas.width, canvas.height * 0.9 - TIMING_WINDOW);
+        ctx.stroke();
+        //Draw Notes
     notes.forEach(note => {
         ctx.fillStyle = 'white';
         ctx.beginPath();
