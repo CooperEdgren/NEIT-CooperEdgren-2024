@@ -11,13 +11,35 @@ body {
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    background: linear-gradient(120deg, #000428, #004e92);
+    animation: gradientAnimation 6s ease infinite;
+    
+    
+    @keyframes gradientAnimation {
+        0% { background-position: 0% 50%; }
+        100% { background-position: 100% 50%; }
+    }
+    
 }
 
-#game-header {
-    display: flex;
-    justify-content: space-between;
-    width: 75%;
-    margin-bottom: 10px;
+@media (max-width: 600px) {
+    canvas {
+        width: 90%;
+        height: 60%;
+    }
+    #game-header {
+        flex-direction: column;
+        align-items: center;
+    }
+}
+
+
+button {
+    transition: background-color 0.3s ease, transform 0.2s ease;
+}
+button:hover {
+    background-color: #555;
+    transform: scale(1.05);
 }
 
 canvas {
@@ -30,4 +52,18 @@ canvas {
 #score-container {
     display: flex;
     flex-direction: column;
+}
+
+#visualizer-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 0;
+}
+
+#game-canvas {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 1;
 }

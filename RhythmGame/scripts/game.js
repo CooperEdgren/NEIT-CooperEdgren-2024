@@ -1,11 +1,14 @@
-
 import { processAudioFromURL, preloadAudio } from "./audioProcessor.js";
-
+document.addEventListener('DOMContentLoaded', () => {
 // Select canvas and set up context
 const canvas = document.getElementById('game-canvas');
 const ctx = canvas.getContext('2d');
 canvas.width = 800;
 canvas.height = 600;
+const visualizerCanvas = document.getElementById('visualizer-canvas');
+const visualizerCtx = visualizerCanvas.getContext('2d');
+visualizerCanvas.width = 800;
+visualizerCanvas.height = 600;
 
 // Set up variables
 let isGameRunning = false;
@@ -24,6 +27,8 @@ let audioStartTime = 0;
 let pausedTime = 0;
 let activeLongNote = null;
 const TIMING_WINDOW = 160;
+let analyser; // Global variable for the analyser node
+
 
 // Event listeners for game controls
 document.getElementById('start-button').addEventListener('click', startGame);
@@ -36,6 +41,31 @@ document.addEventListener('keyup', handleKeyUp);
 canvas.addEventListener('touchstart', handleTouchStart);
 canvas.addEventListener('touchend', handleTouchEnd);
 
+// Function to render visualizer
+function renderVisualizer() {
+    if (!analyser || !isGameRunning) return;
+
+    // Get frequency data
+    const bufferLength = analyser.frequencyBinCount;
+    const dataArray = new Uint8Array(bufferLength);
+    analyser.getByteFrequencyData(dataArray);
+
+    // Draw visualizer on the visualizer canvas
+    visualizerCtx.clearRect(0, 0, visualizerCanvas.width, visualizerCanvas.height);
+    const barWidth = visualizerCanvas.width / bufferLength;
+    let barHeight;
+    let x = 0;
+
+    for (let i = 0; i < bufferLength; i++) {
+        barHeight = dataArray[i];
+        visualizerCtx.fillStyle = `rgb(${barHeight + 50}, 50, 150)`;
+        visualizerCtx.fillRect(x, visualizerCanvas.height - barHeight, barWidth, barHeight);
+        x += barWidth;
+    }
+
+    requestAnimationFrame(renderVisualizer);
+}
+
 // Function to start the game
 function startGame() {
     if (!isGameRunning) {
@@ -43,9 +73,11 @@ function startGame() {
             playAudio();
         }
         isGameRunning = true;
-        requestAnimationFrame(gameLoop);
+        renderVisualizer(); // Start visualizer
+        requestAnimationFrame(gameLoop); // Start game loop
     }
 }
+
 
 // Function to toggle pause
 function togglePause() {
@@ -103,12 +135,18 @@ function playAudio() {
         stopAudio();
         audioSource = audioContext.createBufferSource();
         audioSource.buffer = audioBuffer;
-        audioSource.connect(audioContext.destination);
-        audioStartTime = audioContext.currentTime - pausedTime;
-        audioSource.start(0, pausedTime);
-        pausedTime = 0;
+
+        // Set up analyser for the visualizer
+        analyser = audioContext.createAnalyser();
+        analyser.fftSize = 256;
+        audioSource.connect(analyser);
+        analyser.connect(audioContext.destination);
+
+        audioSource.start(0);
     }
 }
+
+
 
 // Function to pause audio
 function pauseAudio() {
@@ -204,10 +242,19 @@ function holdLongNoteScore(note) {
 
 // Update score display
 function updateScoreDisplay() {
-    document.getElementById('score').textContent = score;
-    document.getElementById('streak').textContent = streak;
-    document.getElementById('multiplier').textContent = `${multiplier}x`;
+    const scoreElement = document.getElementById('score');
+    const streakElement = document.getElementById('streak');
+    const multiplierElement = document.getElementById('multiplier');
+
+    console.log('Score Element:', scoreElement);
+    console.log('Streak Element:', streakElement);
+    console.log('Multiplier Element:', multiplierElement);
+
+    if (scoreElement) scoreElement.textContent = score;
+    if (streakElement) streakElement.textContent = streak;
+    if (multiplierElement) multiplierElement.textContent = `${multiplier}x`;
 }
+
 
 // Game loop
 function gameLoop() {
@@ -271,3 +318,5 @@ function restartGame() {
     stopAudio();
     startGame();
 }
+
+});

@@ -12,27 +12,33 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="theme-color" content="#000000">
 
-    <!-- Add a favicon -->
+    <!-- Tab Icon -->
     <link rel="icon" href="assets/icon/rhythm game icon.ico" type="image/x-icon">
 </head>
 <body>
+    <div id="score-container">
+        <p>Score: <span id="score">0</span></p>
+        <p>Streak: <span id="streak">0</span></p>
+        <p>Multiplier: <span id="multiplier">1x</span></p>
+    </div>
+    
     <div id="game-container">
-        <div id="game-header">
-            <button id="start-button">Start Game</button>
-            <button id="pause-button">Pause Game</button>
-            <button id="restart-button">Restart Game</button>
-            <div id="score-container">
-                <p>Score: <span id="score">0</span></p>
-                <p>Streak: <span id="streak">0</span></p>
-                <p>Multiplier: <span id="multiplier">1x</span></p>
-            </div>
-        </div>
+        <canvas id="visualizer-canvas"></canvas>
         <canvas id="game-canvas"></canvas>
+    </div>
+        <button id="start-button" aria-label="Start the game">Start Game</button>
+        <button id="pause-button" aria-label="Pause the game">Pause Game</button>
+        <button id="restart-button" aria-label="Restart the game">Restart Game</button>
+        <label for="audio-upload">Upload Audio File:</label>
         <input type="file" id="audio-upload" accept="audio/*">
+        
     </div>
 
     <!-- Ensure correct path for game.js script -->
-    <script type="module" src="./scripts/game.js"></script>    
-    <h2 style="font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;">AutoTempo</h2>
+    <script type="module" src="./scripts/game.js"></script>
+    <footer id="footer">
+        <p>2024 AutoTempo | Created by Cooper Edgren</p>
+    </footer>
+        
 </body>
 </html>
