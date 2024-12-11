@@ -1,3 +1,5 @@
+import { processAudio } from ".audioProcessor.js";
+
 // Select canvas and set up context
 const canvas = document.getElementById('game-canvas');
 const ctx = canvas.getContext('2d');
@@ -16,7 +18,7 @@ const laneKeys = ['a', 's', 'd', 'f']; // Keys for lanes
 let audioContext;
 let audioBuffer;
 let audioSource;
-const TIMING_WINDOW = 60; // Timing window in pixels
+const TIMING_WINDOW = 160; // Timing window in pixels
 
 // Event listeners for game controls
 document.getElementById('start-button').addEventListener('click', startGame);
@@ -55,23 +57,37 @@ function togglePause() {
     }
 }
 
-// Function to handle audio upload and generate notes
+// Updated function to handle audio upload
 function handleAudioUpload(event) {
     const file = event.target.files[0];
     if (file) {
         if (!audioContext) {
             audioContext = new AudioContext();
         }
+        
         const reader = new FileReader();
-        reader.onload = function(e) {
-            audioContext.decodeAudioData(e.target.result, function(buffer) {
+        reader.onload = function (e) {
+            audioContext.decodeAudioData(e.target.result, function (buffer) {
                 audioBuffer = buffer;
-                generateNotes(buffer);
+
+                // Use processAudio to generate synced notes
+                processAudio(buffer, audioContext.sampleRate).then(syncedNotes => {
+                    notes = syncedNotes.map(note => ({
+                        lane: note.lane,
+                        y: -50 - note.time * 500, // Convert time to y-position
+                    }));
+
+                    console.log('Generated synced notes:', notes);
+                });
             });
         };
+
         reader.readAsArrayBuffer(file);
     }
 }
+
+
+
 
 // Function to play audio
 function playAudio() {

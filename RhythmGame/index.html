@@ -1,11 +1,19 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Rhythm Game</title>
+    <script type="module" src="./scripts/audioProcessor.js"></script>
     <link rel="stylesheet" href="styles/style.css">
+
+    <!-- Additional meta tags for compatibility -->
+    <meta name="description" content="Rhythm Game with advanced note generation">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="theme-color" content="#000000">
+
+    <!-- Add a favicon -->
+    <link rel="icon" href="assets/icon/rhythm game icon.ico" type="image/x-icon">
 </head>
 <body>
     <div id="game-container">
@@ -22,6 +30,8 @@
         <canvas id="game-canvas"></canvas>
         <input type="file" id="audio-upload" accept=".mp3, .wav">
     </div>
-    <script src="scripts/game.js"></script>
+
+    <!-- Ensure correct path for game.js script -->
+    <script type="module" src="./scripts/game.js"></script>    
 </body>
 </html>
