@@ -2,7 +2,7 @@
 
 const audioCache = {}; // Cache for preloaded audio files
 
-async function preloadAudio(url) {
+export async function preloadAudio(url) {
     const audioContext = new (window.AudioContext || window.webkitAudioContext)();
     const response = await fetch(url);
     const arrayBuffer = await response.arrayBuffer();
@@ -104,6 +104,8 @@ function groupIntervals(intervals) {
 
     return Math.round(tempo);
 }
+
+
 
 export function processAudioFromURL(audioUrl) {
     return generateSyncedNotesFromURL(audioUrl);
