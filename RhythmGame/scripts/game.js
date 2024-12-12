@@ -80,6 +80,14 @@ if (restartButton) {
 } else {
     console.error("Restart button not found in the DOM.");
 }
+// Settings event listeners that apply settings dynamically
+document.getElementById('onset-threshold').addEventListener('input', (e) => {
+    audioWorkletNode.parameters.get('onsetThreshold').value = parseFloat(e.target.value);
+});
+
+document.getElementById('buffer-size').addEventListener('input', (e) => {
+    audioWorkletNode.parameters.get('bufferSize').value = parseInt(e.target.value, 10);
+});
 
 document.addEventListener('keydown', handleKeyDown);
 document.addEventListener('keyup', handleKeyUp);
@@ -109,6 +117,19 @@ function renderVisualizer() {
         visualizerCtx.fillRect(x, visualizerCanvas.height - barHeight, barWidth, barHeight);
         x += barWidth + 1;
     }
+    const renderPulse = (tempo) => {
+        const pulseInterval = 60 / tempo; // Seconds per beat
+        const currentTime = audioContext.currentTime;
+    
+        const pulseIntensity = Math.abs(Math.sin((currentTime % pulseInterval) * Math.PI / pulseInterval));
+        visualizerCtx.save();
+        visualizerCtx.globalAlpha = pulseIntensity * 0.5; // Adjust opacity
+        visualizerCtx.fillStyle = 'rgba(255, 50, 50, 1)';
+        visualizerCtx.fillRect(0, 0, visualizerCanvas.width, visualizerCanvas.height);
+        visualizerCtx.restore();
+    };
+    
+    
 
     // Render pulse effect
     renderPulse(detectedTempo); // Pass the detected tempo to the pulse renderer
