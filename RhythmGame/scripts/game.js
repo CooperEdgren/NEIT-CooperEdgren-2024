@@ -53,12 +53,31 @@ let noteGenerationMode = "pitch"; // Default to pitch detection
     });
     
 // Event listeners for game controls
-const startButton = document.getElementById('start-button');
-if (startButton) {
-    startButton.addEventListener('click', startGame);
-} else {
-    console.error("Start button not found in the DOM.");
-}
+document.getElementById("start-button").addEventListener("click", async () => {
+    if (!audioBuffer) {
+        alert("No audio loaded. Please upload an audio file.");
+        return;
+    }
+
+    await initializeAudioContext();
+
+    if (audioSource) {
+        audioSource.stop();
+    }
+
+    audioSource = audioContext.createBufferSource();
+    audioSource.buffer = audioBuffer;
+    analyser = audioContext.createAnalyser();
+    analyser.fftSize = 256;
+
+    audioSource.connect(analyser);
+    analyser.connect(audioContext.destination);
+    audioSource.start(0);
+
+    console.log("Audio playback started.");
+    setupVisualizer(audioContext, audioSource, 'visualizer-canvas');
+    startGameLoop();
+});
 
 const pauseButton = document.getElementById('pause-button');
 if (pauseButton) {
@@ -89,16 +108,29 @@ document.getElementById('buffer-size').addEventListener('input', (e) => {
     audioWorkletNode.parameters.get('bufferSize').value = parseInt(e.target.value, 10);
 });
 
+const updatePitchRange = () => {
+    const minPitch = parseFloat(document.getElementById('pitch-range-min').value);
+    const maxPitch = parseFloat(document.getElementById('pitch-range-max').value);
+    pitchRange[0] = minPitch;
+    pitchRange[1] = maxPitch;
+};
+
+document.getElementById('pitch-range-min').addEventListener('input', updatePitchRange);
+document.getElementById('pitch-range-max').addEventListener('input', updatePitchRange);
+
+
 document.addEventListener('keydown', handleKeyDown);
 document.addEventListener('keyup', handleKeyUp);
 canvas.addEventListener('touchstart', handleTouchStart);
 canvas.addEventListener('touchend', handleTouchEnd);
 
 // Function to render visualizer
+let visualizerUpdateCount = 0;
 function renderVisualizer() {
     if (!analyser || !isGameRunning) return;
 
-    requestAnimationFrame(renderVisualizer);
+    visualizerUpdateCount++;
+    if (visualizerUpdateCount % 2 !== 0) return; // Skip every other frame
 
     const bufferLength = analyser.frequencyBinCount;
     const dataArray = new Uint8Array(bufferLength);
@@ -106,17 +138,15 @@ function renderVisualizer() {
 
     visualizerCtx.clearRect(0, 0, visualizerCanvas.width, visualizerCanvas.height);
 
-    // Draw bars
     const barWidth = visualizerCanvas.width / bufferLength;
-    let barHeight;
     let x = 0;
 
-    for (let i = 0; i < bufferLength; i++) {
-        barHeight = dataArray[i] / 2;
+    dataArray.forEach((value) => {
+        const barHeight = value / 2;
         visualizerCtx.fillStyle = `rgb(${barHeight + 50}, 50, ${255 - barHeight})`;
         visualizerCtx.fillRect(x, visualizerCanvas.height - barHeight, barWidth, barHeight);
         x += barWidth + 1;
-    }
+    });
     const renderPulse = (tempo) => {
         const pulseInterval = 60 / tempo; // Seconds per beat
         const currentTime = audioContext.currentTime;
@@ -169,6 +199,16 @@ function togglePause() {
     }
 }
 
+async function initializeAudioContext() {
+    if (!audioContext) {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (audioContext.state === 'suspended') {
+        await audioContext.resume();
+        console.log("AudioContext resumed.");
+    }
+}
+
 // Handle audio upload
 /**
  * Handles the audio file upload event.
@@ -176,34 +216,41 @@ function togglePause() {
  * @param {Event} event - The file input change event.
  */
 async function handleAudioUpload(event) {
-    const files = event.target.files;
-    if (!files || files.length === 0) {
-        alert("Please select a valid audio file.");
-        return;
-    }
-
-    const file = files[0];
-    const audioUrl = URL.createObjectURL(file);
-
-    try {
-        console.log("Uploading audio file:", file.name);
-        console.log("Generated audio URL:", audioUrl);
-
-        const { notes, tempo, onsets } = await processAudioFromURL(audioUrl);
-
-        if (!notes || notes.length === 0) {
-            throw new Error("No notes were generated.");
+    document.getElementById("upload-audio").addEventListener("change", async (event) => {
+        const files = event.target.files;
+        if (!files || files.length === 0) {
+            alert("Please select a valid audio file.");
+            return;
         }
-
-        setGameNotes(notes);
-        setGameTempo(tempo);
-
-        console.log("Notes loaded:", notes);
-        console.log("Tempo detected:", tempo);
-    } catch (error) {
-        console.error("Error processing audio:", error);
-        alert("Failed to process the audio file.");
-    }
+    
+        const file = files[0];
+        const audioUrl = URL.createObjectURL(file);
+    
+        try {
+            console.log("Processing audio file:", file.name);
+            const { notes: generatedNotes, tempo, onsets } = await processAudioFromURL(audioUrl);
+    
+            if (!generatedNotes || generatedNotes.length === 0) {
+                throw new Error("No notes were generated.");
+            }
+    
+            // Update game state
+            notes = generatedNotes;
+            detectedTempo = tempo;
+            console.log("Notes loaded:", notes);
+            console.log("Tempo detected:", detectedTempo);
+    
+            // Update visualizer
+            if (audioSource && audioContext) {
+                setupVisualizer(audioContext, audioSource, 'visualizer-canvas');
+            }
+    
+            alert(`Audio processed successfully! Tempo: ${tempo} BPM`);
+        } catch (error) {
+            console.error("Error processing audio:", error);
+            alert("Failed to process the audio file. Please try again.");
+        }
+    });
 }
 
 async function getAudioContext() {
@@ -382,7 +429,10 @@ function checkNoteHit(laneIndex) {
  */
 function setGameTempo(tempo) {
     detectedTempo = tempo;
+    const tempoDisplay = document.getElementById('tempo-display');
+    if (tempoDisplay) tempoDisplay.textContent = `Tempo: ${tempo} BPM`;
 }
+
 
 // Increment score for holding long notes
 /**
@@ -442,14 +492,15 @@ function gameLoop(timestamp) {
  * Handles game over logic if too many notes are missed.
  */
 function updateGame() {
-    notes.forEach(note => {
-        note.y += 5;
+    const currentTime = audioContext.currentTime;
+    notes.forEach((note) => {
+        note.y = canvas.height - (currentTime - note.time) * 50; // Adjust position based on time
         if (note.y > canvas.height) {
-            missedNotes++;
-            if (missedNotes > 5) failState();
+            notes = notes.filter((n) => n !== note); // Remove missed notes
         }
     });
 }
+
 /**
  * Creates particle effects at the specified position for visual feedback.
  * @param {number} x - The x-coordinate of the particle effect.
@@ -564,15 +615,13 @@ function renderGame() {
         ctx.stroke();
         //Draw Notes
         console.log("Rendering notes:", notes);
-        notes.forEach(note => {
-            const currentTime = audioContext.currentTime - audioStartTime; // Sync with audio playback
-            note.y = canvas.height - (currentTime - note.time) * 50; // Adjust y-position based on time
-        ctx.fillStyle = 'white';
-        ctx.beginPath();
-        ctx.arc(lanes[note.lane] * canvas.width, note.y, 20, 0, Math.PI * 2);
-        ctx.fill();
-        console.log("Rendering notes:", notes);
-    });
+        notes.forEach((note) => {
+            ctx.beginPath();
+            ctx.arc(note.lane * canvas.width / 4, note.y, 10, 0, Math.PI * 2);
+            ctx.fillStyle = "white";
+            ctx.fill();
+            ctx.closePath();
+        });
         // Render particles
         renderParticles(ctx);
 }

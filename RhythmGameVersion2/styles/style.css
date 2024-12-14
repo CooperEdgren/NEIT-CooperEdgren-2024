@@ -1,0 +1,28 @@
+
+body {
+    margin: 0;
+    overflow: hidden;
+    font-family: Arial, sans-serif;
+    background-color: #000;
+    color: #fff;
+}
+canvas {
+    display: block;
+}
+.controls {
+    position: fixed;
+    bottom: 10px;
+    left: 10px;
+}
+button {
+    margin: 5px;
+    padding: 10px 20px;
+    background-color: #444;
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+}
+button:hover {
+    background-color: #666;
+}

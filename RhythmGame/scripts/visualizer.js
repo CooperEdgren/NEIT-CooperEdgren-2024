@@ -1,4 +1,5 @@
 let lastVisualizerUpdate = 0;
+let animationId;
 
 export function setupVisualizer(audioContext, audioSource, canvasId) {
     const canvas = document.getElementById(canvasId);
@@ -14,7 +15,7 @@ export function setupVisualizer(audioContext, audioSource, canvasId) {
     const dataArray = new Uint8Array(bufferLength);
 
     function renderVisualizer(timestamp) {
-        if (timestamp - lastVisualizerUpdate < 1000 / FRAME_RATE) {
+        if (timestamp - lastVisualizerUpdate < 1000 / 30) {
             requestAnimationFrame(renderVisualizer);
             return;
         }
@@ -23,11 +24,10 @@ export function setupVisualizer(audioContext, audioSource, canvasId) {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
 
         const barWidth = canvas.width / bufferLength;
-        let barHeight;
         let x = 0;
 
         for (let i = 0; i < bufferLength; i++) {
-            barHeight = dataArray[i] / 2;
+            const barHeight = dataArray[i] / 2;
             ctx.fillStyle = `rgb(${barHeight + 50}, 50, ${255 - barHeight})`;
             ctx.fillRect(x, canvas.height - barHeight, barWidth, barHeight);
             x += barWidth + 1;
@@ -39,3 +39,12 @@ export function setupVisualizer(audioContext, audioSource, canvasId) {
 
     renderVisualizer(0);
 }
+
+function stopVisualizer() {
+    cancelAnimationFrame(animationId);
+}
+
+window.addEventListener('resize', () => {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+});

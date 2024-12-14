@@ -99,7 +99,7 @@ canvas {
     top: 0;
     left: 0;
     width: 800px;
-    height: 600px;
+    height: auto;
 }
 
 @media (max-width: 768px) {
@@ -133,6 +133,24 @@ canvas {
         width: 90%;
         padding: 8px;
     }
+}
+
+.hit-note {
+    animation: hit-animation 0.5s ease;
+}
+
+.missed-note {
+    animation: miss-animation 0.5s ease;
+}
+
+@keyframes hit-animation {
+    from { background-color: green; }
+    to { background-color: transparent; }
+}
+
+@keyframes miss-animation {
+    from { background-color: red; }
+    to { background-color: transparent; }
 }
 
 
